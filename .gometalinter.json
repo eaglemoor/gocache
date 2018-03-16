@@ -1,0 +1,6 @@
+{
+  "Enable": ["golint", "vet", "deadcode"],
+  "Linters": {
+    "vet": {"Command": "go vet"}
+  }
+}
