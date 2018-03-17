@@ -33,9 +33,10 @@ type ICache interface {
 	Get(key ...interface{}) map[interface{}]interface{}
 }
 
-type cache struct {
-	ICache
+var _ ICache = &cache{}
 
+// Cache storage
+type cache struct {
 	items sync.Map
 
 	garbageInterval   time.Duration
@@ -86,7 +87,7 @@ func (c *cache) Update(key interface{}, value interface{}, d time.Duration) erro
 	return c.Set(key, value, d)
 }
 
-func (c *cache) GetMap(keys ...interface{}) map[interface{}]interface{} {
+func (c *cache) Get(keys ...interface{}) map[interface{}]interface{} {
 	result := make(map[interface{}]interface{}, len(keys))
 
 	for _, key := range keys {
@@ -100,7 +101,6 @@ func (c *cache) GetMap(keys ...interface{}) map[interface{}]interface{} {
 
 func (c *cache) runGarbage() {
 	c.garbageTicker = time.NewTicker(c.garbageInterval)
-
 	go func() {
 		for range c.garbageTicker.C {
 			c.items.Range(func(key, value interface{}) bool {

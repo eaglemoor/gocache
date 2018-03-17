@@ -10,6 +10,10 @@ var (
 	cacheLock sync.RWMutex
 )
 
+func init() {
+	cacheList = make(map[string]ICache)
+}
+
 // NewCache Create new cache instance
 func NewCache(name string, garbageInterval, expiration time.Duration) ICache {
 	c := &cache{
@@ -61,7 +65,7 @@ func DeleteCache(name string) {
 	defer cacheLock.Unlock()
 
 	if c, ok := cacheList[name]; ok {
-		c.(cache).stopGarbage()
+		c.(*cache).stopGarbage()
 	}
 
 	delete(cacheList, name)
