@@ -1,4 +1,8 @@
 # gocache
+
+[![Build Status](https://travis-ci.org/eaglemoor/gocache.svg?branch=master)](https://travis-ci.org/eaglemoor/gocache)
+
+
 Go cache test task
 
 ## TASK
