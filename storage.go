@@ -15,10 +15,15 @@ func init() {
 }
 
 // NewCache Create new cache instance
-func NewCache(name string, garbageInterval, expiration time.Duration) ICache {
+func NewCache(name string, garbageInterval, expiration time.Duration) (ICache, error) {
+	cexist := GetCache(name)
+	if cexist != nil {
+		return nil, ErrorAlreadyExist
+	}
+
 	c := &cache{
-		garbageInterval:   DefaultGarbageInterval,
-		defaultExpiration: DefaultExpiration,
+		garbageInterval: DefaultGarbageInterval,
+		expiration:      DefaultExpiration,
 	}
 
 	if garbageInterval > 0 {
@@ -26,16 +31,16 @@ func NewCache(name string, garbageInterval, expiration time.Duration) ICache {
 	}
 
 	if expiration > 0 {
-		c.defaultExpiration = expiration
+		c.expiration = expiration
 	}
 
 	cacheLock.Lock()
-	defer cacheLock.Unlock()
 	cacheList[name] = c
+	cacheLock.Unlock()
 
 	c.runGarbage()
 
-	return c
+	return c, nil
 }
 
 // GetCache Cache instance
@@ -67,6 +72,5 @@ func DeleteCache(name string) {
 	if c, ok := cacheList[name]; ok {
 		c.(*cache).stopGarbage()
 	}
-
 	delete(cacheList, name)
 }

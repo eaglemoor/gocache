@@ -22,3 +22,9 @@ Go cache test task
 Значения в кэше могут быть любые.
 
 Кэш должен быть concurrent safe.
+
+## Make
+
+`make test` — run test
+
+`make cover` — run test with code cover
