@@ -121,6 +121,7 @@ func (c *cache) runGarbage() {
 		for {
 			select {
 			case <-c.garbageTicker.C:
+				// Working fast and don't lock all map
 				c.items.Range(func(key, value interface{}) bool {
 					if value.(cacheItem).Expired() {
 						c.items.Delete(key)

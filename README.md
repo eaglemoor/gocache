@@ -32,3 +32,7 @@ Go cache test task
 `make test` — run test
 
 `make cover` — run test with code cover
+
+## Идеи для улучшения
+
+1. Перевести Garbage на LRU
