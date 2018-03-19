@@ -26,24 +26,24 @@ func TestCache_AddGetExpired(t *testing.T) {
 	w.Wait()
 
 	key100 := "TestCache_Add_100"
-	add100, ok := c.Get(key100)[key100]
-	if !ok {
+	add100 := c.Get(key100)
+	if len(add100) < 1 || add100[0] == nil {
 		t.Errorf("Can't find %s", key100)
 	}
-	if add100.(int) != 100 {
-		t.Errorf("%s %+v != %d", key100, add100, 100)
+	if add100[0].(int) != 100 {
+		t.Errorf("%s %+v != %d", key100, add100[0], 100)
 	}
 
 	time.Sleep(time.Second * 2)
-	_, ok = c.Get(key100)[key100]
-	if !ok {
+	add100 = c.Get(key100)
+	if len(add100) < 1 || add100[0] == nil {
 		t.Errorf("%s not exist after 2sec", key100)
 	}
 
 	time.Sleep(time.Second * 5)
 
-	_, ok = c.Get(key100)[key100]
-	if ok {
+	add100 = c.Get(key100)
+	if len(add100) < 1 && add100[0] != nil {
 		t.Errorf("%s exist after 7sec", key100)
 	}
 }
@@ -82,11 +82,12 @@ func TestCache_Add(t *testing.T) {
 	}
 
 	time.Sleep(time.Second * 2)
-	if test1, exist := c.Get("test-1")["test-1"]; !exist {
+	test1 := c.Get("test-1")
+	if len(test1) < 1 {
 		t.Error("test-1 not found")
 	} else {
-		if test1.(int) != 1 {
-			t.Errorf("%q != 1", test1)
+		if test1[0].(int) != 1 {
+			t.Errorf("%+v != 1", test1[0])
 		}
 	}
 }
@@ -113,11 +114,12 @@ func TestCache_Update(t *testing.T) {
 
 	time.Sleep(time.Second * 2)
 
-	if v, exist := c.Get(tkey)[tkey]; !exist {
+	v := c.Get(tkey)
+	if len(v) < 1 {
 		t.Error(tkey + " not found")
 	} else {
-		if v.(int) != 10 {
-			t.Errorf("%s wrong value %v != %d", tkey, v, 10)
+		if v[0].(int) != 10 {
+			t.Errorf("%s wrong value %v != %d", tkey, v[0], 10)
 		}
 	}
 

@@ -6,21 +6,16 @@ import (
 )
 
 var (
-	cacheList map[string]ICache
+	cacheList = make(map[string]ICache)
 	cacheLock sync.RWMutex
 )
 
-func init() {
-	cacheList = make(map[string]ICache)
-}
-
 // NewCache Create new cache instance
 func NewCache(name string, garbageInterval, expiration time.Duration) (ICache, error) {
-	cexist, err := GetCache(name)
-	if err != nil {
-		return nil, err
-	}
-	if cexist != nil {
+	cacheLock.Lock()
+	defer cacheLock.Unlock()
+
+	if _, exist := cacheList[name]; exist {
 		return nil, ErrorAlreadyExist
 	}
 
@@ -37,11 +32,9 @@ func NewCache(name string, garbageInterval, expiration time.Duration) (ICache, e
 		c.expiration = expiration
 	}
 
-	cacheLock.Lock()
 	cacheList[name] = c
-	cacheLock.Unlock()
 
-	c.runGarbage()
+	go c.runGarbage()
 
 	return c, nil
 }
@@ -56,9 +49,10 @@ func GetCache(name string) (ICache, error) {
 
 // CacheList Cache names
 func CacheList() []string {
-	keys := make([]string, len(cacheList))
 	cacheLock.RLock()
 	defer cacheLock.RUnlock()
+
+	keys := make([]string, len(cacheList))
 
 	for key := range cacheList {
 		keys = append(keys, key)

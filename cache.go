@@ -18,8 +18,8 @@ const (
 )
 
 var (
-	// ErrorAlreadyExist Cache this used key allready exist
-	ErrorAlreadyExist = errors.New("item already exist")
+	// ErrorAlreadyExist This used key allready exist
+	ErrorAlreadyExist = errors.New("already exist")
 
 	// ErrorNotFound Can't found cache with used key
 	ErrorNotFound = errors.New("not found")
@@ -37,13 +37,14 @@ type ICache interface {
 	Update(key, value interface{}, d time.Duration) error
 
 	// Get list of items
-	Get(key ...interface{}) map[interface{}]interface{}
+	Get(key ...interface{}) []interface{}
 }
 
 var _ ICache = &cache{}
 
 // Cache storage
 type cache struct {
+	// For best result on highload with 32+ processors. https://habrahabr.ru/post/338718/
 	items sync.Map
 
 	garbageInterval time.Duration
@@ -67,7 +68,7 @@ func (ci cacheItem) Expired() bool {
 }
 
 func (c *cache) Add(key interface{}, value interface{}, d time.Duration) error {
-	if _, ok := c.items.Load(key); ok == true {
+	if _, ok := c.items.Load(key); ok {
 		return ErrorAlreadyExist
 	}
 
@@ -90,19 +91,21 @@ func (c *cache) Set(key interface{}, value interface{}, d time.Duration) error {
 }
 
 func (c *cache) Update(key interface{}, value interface{}, d time.Duration) error {
-	if _, ok := c.items.Load(key); ok == false {
+	if _, ok := c.items.Load(key); !ok {
 		return ErrorNotFound
 	}
 
 	return c.Set(key, value, d)
 }
 
-func (c *cache) Get(keys ...interface{}) map[interface{}]interface{} {
-	result := make(map[interface{}]interface{}, len(keys))
+func (c *cache) Get(keys ...interface{}) []interface{} {
+	result := make([]interface{}, 0, len(keys))
 
 	for _, key := range keys {
-		if item, ok := c.items.Load(key); ok == true && item.(cacheItem).Expired() == false {
-			result[key] = item.(cacheItem).item
+		if item, ok := c.items.Load(key); ok && !item.(cacheItem).Expired() {
+			result = append(result, item.(cacheItem).item)
+		} else {
+			result = append(result, nil)
 		}
 	}
 
@@ -119,7 +122,7 @@ func (c *cache) runGarbage() {
 			select {
 			case <-c.garbageTicker.C:
 				c.items.Range(func(key, value interface{}) bool {
-					if value.(cacheItem).Expired() == true {
+					if value.(cacheItem).Expired() {
 						c.items.Delete(key)
 					}
 					return true
@@ -132,7 +135,6 @@ func (c *cache) runGarbage() {
 	}()
 }
 
-//
 func (c *cache) stopGarbage() {
 	if c.garbageTicker != nil {
 		c.garbageTicker.Stop()
