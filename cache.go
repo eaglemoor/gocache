@@ -27,9 +27,16 @@ var (
 
 // ICache interface
 type ICache interface {
+	// Add new item to cache
 	Add(key, value interface{}, d time.Duration) error
+
+	// Set item to cache
 	Set(key, value interface{}, d time.Duration) error
+
+	// Update item if exist
 	Update(key, value interface{}, d time.Duration) error
+
+	// Get list of items
 	Get(key ...interface{}) map[interface{}]interface{}
 }
 
@@ -125,6 +132,7 @@ func (c *cache) runGarbage() {
 	}()
 }
 
+//
 func (c *cache) stopGarbage() {
 	if c.garbageTicker != nil {
 		c.garbageTicker.Stop()

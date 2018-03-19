@@ -58,3 +58,50 @@ func TestNewCache(t *testing.T) {
 		t.Errorf("cache garbage interval %d != %d", ccache2.garbageInterval, gInterval)
 	}
 }
+
+func TestCacheList(t *testing.T) {
+	// Check and create cache for multi and alone test
+	c1, _ := GetCache(name1)
+	if c1 == nil {
+		NewCache(name1, 0, 0)
+	}
+
+	// Check and create cache for multi and alone test
+	c2, _ := GetCache(name2)
+	if c2 == nil {
+		NewCache(name2, 0, 0)
+	}
+
+	list := CacheList()
+	var fname1, fname2 bool
+	for _, name := range list {
+		if name == name1 {
+			fname1 = true
+		}
+		if name == name2 {
+			fname2 = true
+		}
+	}
+
+	if !fname1 {
+		t.Error(name1 + " not found")
+	}
+	if !fname2 {
+		t.Error(name1 + " not found")
+	}
+}
+
+func TestDeleteCache(t *testing.T) {
+	c, _ := GetCache(name1)
+	if c == nil {
+		c, _ = NewCache(name1, 0, 0)
+	}
+
+	c.Add("test", 10, 0)
+
+	DeleteCache(name1)
+
+	if c, _ := GetCache(name1); c != nil {
+		t.Errorf("cache %s not delete", name1)
+	}
+}

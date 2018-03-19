@@ -9,9 +9,6 @@ import (
 
 func TestCache_AddGetExpired(t *testing.T) {
 	c, err := NewCache(t.Name(), time.Millisecond*500, 0)
-	if err == ErrorAlreadyExist {
-		c, err = GetCache(t.Name())
-	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,9 +50,6 @@ func TestCache_AddGetExpired(t *testing.T) {
 
 func TestCache_Add(t *testing.T) {
 	c, err := NewCache(t.Name(), time.Millisecond*500, 0)
-	if err == ErrorAlreadyExist {
-		c, err = GetCache(t.Name())
-	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,9 +93,6 @@ func TestCache_Add(t *testing.T) {
 
 func TestCache_Update(t *testing.T) {
 	c, err := NewCache(t.Name(), time.Millisecond*500, time.Hour)
-	if err == ErrorAlreadyExist {
-		c, err = GetCache(t.Name())
-	}
 	if err != nil {
 		t.Fatal(err)
 	}
