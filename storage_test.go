@@ -7,12 +7,15 @@ import (
 )
 
 var (
-	name1 = "cache-1"
-	name2 = "cache-2"
+	name1 = "storage-cache-1"
+	name2 = "storage-cache-2"
 )
 
 func TestNewCache(t *testing.T) {
 	c, err := NewCache(name1, 0, 0)
+	if err == ErrorAlreadyExist {
+		c, err = GetCache(name1)
+	}
 	if err != nil {
 		t.Error(err)
 	}

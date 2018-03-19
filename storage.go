@@ -16,7 +16,10 @@ func init() {
 
 // NewCache Create new cache instance
 func NewCache(name string, garbageInterval, expiration time.Duration) (ICache, error) {
-	cexist := GetCache(name)
+	cexist, err := GetCache(name)
+	if err != nil {
+		return nil, err
+	}
 	if cexist != nil {
 		return nil, ErrorAlreadyExist
 	}
@@ -44,11 +47,11 @@ func NewCache(name string, garbageInterval, expiration time.Duration) (ICache, e
 }
 
 // GetCache Cache instance
-func GetCache(name string) ICache {
+func GetCache(name string) (ICache, error) {
 	cacheLock.RLock()
 	defer cacheLock.RUnlock()
 
-	return cacheList[name]
+	return cacheList[name], nil
 }
 
 // CacheList Cache names

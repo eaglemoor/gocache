@@ -2,65 +2,79 @@ package gocache
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
 
 func TestCache_AddGetExpired(t *testing.T) {
-	cache, err := NewCache("test-"+t.Name(), time.Millisecond*500, 0)
+	c, err := NewCache(t.Name(), time.Millisecond*500, 0)
+	if err == ErrorAlreadyExist {
+		c, err = GetCache(t.Name())
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	var w sync.WaitGroup
+
 	for i := 0; i < 1000; i++ {
 		// ignore error
-		go cache.Add(fmt.Sprint("TestCache_Add_", i), i, time.Second*5)
+		w.Add(1)
+		go func(i int) {
+			c.Add(fmt.Sprintf("TestCache_Add_%d", i), i, time.Second*5)
+			w.Done()
+		}(i)
 	}
+	w.Wait()
 
 	key100 := "TestCache_Add_100"
-	add100, ok := cache.Get(key100)[key100]
+	add100, ok := c.Get(key100)[key100]
 	if !ok {
-		t.Errorf("Can't find TestCache_Add_100")
+		t.Errorf("Can't find %s", key100)
 	}
 	if add100.(int) != 100 {
-		t.Errorf("%s %q != %d", key100, add100, 100)
+		t.Errorf("%s %+v != %d", key100, add100, 100)
 	}
 
 	time.Sleep(time.Second * 2)
-	_, ok = cache.Get(key100)[key100]
+	_, ok = c.Get(key100)[key100]
 	if !ok {
 		t.Errorf("%s not exist after 2sec", key100)
 	}
 
 	time.Sleep(time.Second * 5)
 
-	_, ok = cache.Get(key100)[key100]
+	_, ok = c.Get(key100)[key100]
 	if ok {
 		t.Errorf("%s exist after 7sec", key100)
 	}
 }
 
 func TestCache_Add(t *testing.T) {
-	cache, err := NewCache("test-"+t.Name(), time.Millisecond*500, 0)
+	c, err := NewCache(t.Name(), time.Millisecond*500, 0)
+	if err == ErrorAlreadyExist {
+		c, err = GetCache(t.Name())
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Cache work
-	err = cache.Add("test-1", 1, time.Second*2)
+	err = c.Add("test-1", 1, time.Second*2)
 	if err != nil {
 		t.Error("Add test-1")
 	}
 
 	// More data
 	for i := 2; i < 100; i++ {
-		if err = cache.Add(fmt.Sprint("test-", i), i, time.Second*5); err != nil {
+		if err = c.Add(fmt.Sprint("test-", i), i, time.Second*5); err != nil {
 			t.Error(err)
 		}
 	}
 
 	// Check duplicate error
-	err = cache.Add("test-1", 1, NoExpiration)
+	err = c.Add("test-1", 1, NoExpiration)
 	if err == nil {
 		t.Error("test-1 not duplicate")
 	}
@@ -68,13 +82,13 @@ func TestCache_Add(t *testing.T) {
 	// Wait garbage cache "test-1"
 	time.Sleep(time.Second * 3)
 
-	err = cache.Add("test-1", 1, NoExpiration)
+	err = c.Add("test-1", 1, NoExpiration)
 	if err != nil {
 		t.Error(err)
 	}
 
 	time.Sleep(time.Second * 2)
-	if test1, exist := cache.Get("test-1")["test-1"]; !exist {
+	if test1, exist := c.Get("test-1")["test-1"]; !exist {
 		t.Error("test-1 not found")
 	} else {
 		if test1.(int) != 1 {
@@ -84,7 +98,10 @@ func TestCache_Add(t *testing.T) {
 }
 
 func TestCache_Update(t *testing.T) {
-	cache, err := NewCache("test-"+t.Name(), time.Millisecond*500, time.Hour)
+	c, err := NewCache(t.Name(), time.Millisecond*500, time.Hour)
+	if err == ErrorAlreadyExist {
+		c, err = GetCache(t.Name())
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,20 +109,20 @@ func TestCache_Update(t *testing.T) {
 	tkey := "test-1"
 
 	// Cache work
-	err = cache.Add(tkey, 1, time.Second)
+	err = c.Add(tkey, 1, time.Second)
 	if err != nil {
 		t.Error(err)
 	}
 
 	// Update
-	err = cache.Update(tkey, 10, NoExpiration)
+	err = c.Update(tkey, 10, NoExpiration)
 	if err != nil {
 		t.Error(err)
 	}
 
 	time.Sleep(time.Second * 2)
 
-	if v, exist := cache.Get(tkey)[tkey]; !exist {
+	if v, exist := c.Get(tkey)[tkey]; !exist {
 		t.Error(tkey + " not found")
 	} else {
 		if v.(int) != 10 {
@@ -114,32 +131,32 @@ func TestCache_Update(t *testing.T) {
 	}
 
 	// Fake update
-	err = cache.Update("test-2", 12, NoExpiration)
+	err = c.Update("test-2", 12, NoExpiration)
 	if err == nil {
 		t.Error("Update unknown record")
 	}
 }
 
 func TestCache_Set(t *testing.T) {
-	cache := cache{
+	c := cache{
 		garbageInterval: time.Millisecond * 500,
 		expiration:      DefaultExpiration,
 	}
-	cache.runGarbage()
+	c.runGarbage()
 
 	tkey := "test-1"
 
 	var err error
 
-	if err = cache.Add(tkey, 10, time.Hour); err != nil {
+	if err = c.Add(tkey, 10, time.Hour); err != nil {
 		t.Error(err)
 	}
 
-	if err = cache.Set(tkey, 15, NoExpiration); err != nil {
+	if err = c.Set(tkey, 15, NoExpiration); err != nil {
 		t.Error(err)
 	}
 
-	item, exist := cache.items.Load(tkey)
+	item, exist := c.items.Load(tkey)
 	if !exist {
 		t.Error(tkey + " not found")
 	}
@@ -154,26 +171,26 @@ func TestCache_Set(t *testing.T) {
 }
 
 func TestCache_StopGarbage(t *testing.T) {
-	cache := cache{
+	c := cache{
 		garbageInterval: time.Millisecond * 500,
 		expiration:      DefaultExpiration,
 	}
-	cache.runGarbage()
+	c.runGarbage()
 
-	cache.Add("test", 10, 0)
+	c.Add("test", 10, 0)
 
 	time.Sleep(time.Second * 1)
 
-	if cache.garbageTicker == nil {
+	if c.garbageTicker == nil {
 		t.Fatal("garbage not start")
 	}
 
 	// test double run
-	cache.runGarbage()
+	c.runGarbage()
 	time.Sleep(time.Second * 2)
 
 	// test double stop
-	cache.stopGarbage()
+	c.stopGarbage()
 	time.Sleep(time.Second)
-	cache.stopGarbage()
+	c.stopGarbage()
 }
