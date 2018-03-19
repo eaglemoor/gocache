@@ -1,7 +1,7 @@
 # gocache
 
 [![Build Status](https://travis-ci.org/eaglemoor/gocache.svg?branch=master)](https://travis-ci.org/eaglemoor/gocache)
-
+[![codecov](https://codecov.io/gh/eaglemoor/gocache/branch/master/graph/badge.svg)](https://codecov.io/gh/eaglemoor/gocache)
 
 Go cache test task
 

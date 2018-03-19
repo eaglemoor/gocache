@@ -4,3 +4,5 @@ go:
   - "1.10"
 script:
   - make test
+after_success:
+  - bash <(curl -s https://codecov.io/bash) -f c.out -t da5dc5b8-a967-4c84-9509-0e5259dbadd9
